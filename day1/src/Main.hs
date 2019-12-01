@@ -2,11 +2,14 @@ module Main where
 
 import Control.Arrow ((&&&))
 
-part1 :: String -> ()
-part1 s = ()
+fuelCost :: Int -> Int
+fuelCost size = (size `div` 3) - 2
 
-part2 :: String -> ()
+part1 :: [Int] -> Int
+part1 = sum . map fuelCost
+
+part2 :: [Int] -> ()
 part2 s = ()
 
 main :: IO ()
-main = interact $ show . (part1 &&& part2)
+main = interact $ show . (part1 &&& part2) . map read . lines
