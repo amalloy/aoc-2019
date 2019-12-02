@@ -39,14 +39,22 @@ tick p pos = do
   p' <- eval p instr
   pure (pos + 4, p')
 
-part1 :: Input -> Maybe Int
-part1 = go 0 . M.insert 1 12 . M.insert 2 2
+run :: Int -> Int -> Program -> Program
+run noun verb = go 0 . M.insert 1 noun . M.insert 2 verb
   where go offset program = case tick program offset of
-          Nothing -> M.lookup 0 program
+          Nothing -> program
           Just (offset', program') -> go offset' program'
 
-part2 :: Input -> ()
-part2 i = ()
+part1 :: Input -> Maybe Int
+part1 = M.lookup 0 . run 12 2
+
+part2 :: Input -> [Int]
+part2 p = do
+  noun <- [0..99]
+  verb <- [0..99]
+  case M.lookup 0 $ run noun verb p of
+    Just 19690720 -> [100 * noun + verb]
+    _ -> []
 
 prepare :: String -> Input
 prepare s = M.fromList . zip [0..] . read $ "[" ++ init s ++ "]"
