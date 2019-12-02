@@ -3,10 +3,12 @@ module Main where
 import Control.Arrow ((&&&))
 import Data.Functor.Foldable (ana, ListF(..))
 
+type Input = [Int]
+
 fuelCost :: Int -> Int
 fuelCost mass = max 0 $ (mass `div` 3) - 2
 
-part1 :: [Int] -> Int
+part1 :: Input -> Int
 part1 = sum . map fuelCost
 
 tyrannicalCost :: Int -> [Int]
@@ -20,8 +22,11 @@ tyrannicalCost' = ana f
         f mass = Cons fuel fuel
           where fuel = fuelCost mass
 
-part2 :: [Int] -> Int
+part2 :: Input -> Int
 part2 = sum . concatMap tyrannicalCost'
 
+prepare :: String -> Input
+prepare = map read . lines
+
 main :: IO ()
-main = readFile "input.txt" >>= print . (part1 &&& part2) . map read . lines
+main = readFile "input.txt" >>= print . (part1 &&& part2) . prepare

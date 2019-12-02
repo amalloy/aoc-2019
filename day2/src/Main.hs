@@ -2,11 +2,16 @@ module Main where
 
 import Control.Arrow ((&&&))
 
-part1 :: String -> ()
-part1 s = ()
+type Input = [String]
 
-part2 :: String -> ()
-part2 s = ()
+part1 :: Input -> ()
+part1 i = ()
+
+part2 :: Input -> ()
+part2 i = ()
+
+prepare :: String -> Input
+prepare = lines
 
 main :: IO ()
-main = interact $ show . (part1 &&& part2)
+main = readFile "input.txt" >>= print . (part1 &&& part2) . prepare
