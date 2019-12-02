@@ -16,6 +16,7 @@ tyrannicalCost 0 = []
 tyrannicalCost mass = fuel : tyrannicalCost fuel
   where fuel = fuelCost mass
 
+-- Just a version of tyrannicalCost using recursion-schemes for practice
 tyrannicalCost' :: Int -> [Int]
 tyrannicalCost' = ana f
   where f 0 = Nil
