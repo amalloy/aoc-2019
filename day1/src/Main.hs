@@ -24,4 +24,4 @@ part2 :: [Int] -> Int
 part2 = sum . concatMap tyrannicalCost'
 
 main :: IO ()
-main = interact $ show . (part1 &&& part2) . map read . lines
+main = readFile "input.txt" >>= print . (part1 &&& part2) . map read . lines
