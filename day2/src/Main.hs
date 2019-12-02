@@ -1,3 +1,5 @@
+{-# LANGUAGE TupleSections #-}
+
 module Main where
 
 import Control.Applicative (liftA2, liftA3)
@@ -33,17 +35,15 @@ eval m (Binary op src1 src2 dst) = do
   pure $ M.insert dst result m
   where at = (m M.!?)
 
-tick :: Program -> Position -> Maybe (Position, Program)
-tick p pos = do
+tick :: (Position, Program) -> Maybe (Position, Program)
+tick (pos, p) = do
   instr <- decode p pos
   p' <- eval p instr
   pure (pos + 4, p')
 
 run :: Int -> Int -> Program -> Program
-run noun verb = go 0 . M.insert 1 noun . M.insert 2 verb
-  where go offset program = case tick program offset of
-          Nothing -> program
-          Just (offset', program') -> go offset' program'
+run noun verb = go . (0,) . M.insert 1 noun . M.insert 2 verb
+  where go p@(offset, program) = maybe program go $ tick p
 
 part1 :: Input -> Maybe Int
 part1 = M.lookup 0 . run 12 2
