@@ -55,12 +55,11 @@ part1 :: Input -> Maybe Int
 part1 = M.lookup 0 . run 12 2
 
 part2 :: Input -> [Int]
-part2 p = do
-  noun <- [0..99]
-  verb <- [0..99]
-  case M.lookup 0 $ run noun verb p of
-    Just 19690720 -> [100 * noun + verb]
-    _ -> []
+part2 p = ((,) <$> [0..99] <*> [0..99]) >>= solve
+  where solve (noun, verb) =
+          case M.lookup 0 $ run noun verb p of
+            Just 19690720 -> [100 * noun + verb]
+            _ -> []
 
 prepare :: String -> Input
 prepare s = M.fromList . zip [0..] . read $ "[" ++ init s ++ "]"
