@@ -5,6 +5,7 @@ module Main where
 import Control.Applicative (liftA2, liftA3)
 import Control.Arrow ((&&&))
 import qualified Data.IntMap as M
+import Data.Maybe (fromJust, isJust)
 
 type Program = M.IntMap Int
 type Input = Program
@@ -41,9 +42,14 @@ tick (pos, p) = do
   p' <- eval p instr
   pure (pos + 4, p')
 
+states :: Int -> Int -> Program -> [(Position, Program)]
+states noun verb =
+  map fromJust . takeWhile isJust
+  . iterate (>>= tick)
+  . Just . (0,) . M.insert 1 noun . M.insert 2 verb
+
 run :: Int -> Int -> Program -> Program
-run noun verb = go . (0,) . M.insert 1 noun . M.insert 2 verb
-  where go p@(offset, program) = maybe program go $ tick p
+run noun verb = snd . last . states noun verb
 
 part1 :: Input -> Maybe Int
 part1 = M.lookup 0 . run 12 2
