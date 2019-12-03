@@ -25,3 +25,4 @@ executable day3
                      , parsec
                      , regex-applicative
                      , recursion-schemes
+                     , split
