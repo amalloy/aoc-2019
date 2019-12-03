@@ -6,8 +6,9 @@ import Data.List.Split (splitOn)
 import Data.Maybe (mapMaybe)
 import Data.Monoid (Sum(..))
 import Data.Ord (comparing)
-import qualified Data.Set as S
 import Text.Read (readMaybe)
+
+import qualified Data.Map as M
 
 type Input = [[(Int, Int)]]
 
@@ -35,13 +36,18 @@ readVector _ = Nothing
 parse :: String -> [(Int, Int)]
 parse = mapMaybe readVector . splitOn ","
 
+visited :: Input -> [M.Map (Sum Int, Sum Int) Int]
+visited wires = do
+  wire <- wires
+  let units = asUnits =<< wire
+      spacesVisited = tail . intermediates $ units
+  pure . M.fromListWith const . flip zip [0..] $ spacesVisited
+
+
 part1 :: Input -> (Sum Int, Sum Int)
-part1 wires = let visited  = do
-                    wire <- wires
-                    let units = wire >>= asUnits
-                    pure . S.fromList . tail . intermediates $ units
+part1 wires = let traces = visited wires
               in minimumBy (comparing (\(x, y) -> abs x + abs y))
-                 . foldr1 S.intersection $ visited
+                 . M.keys . foldr1 M.intersection $ traces
 
 
 part2 :: Input -> ()
