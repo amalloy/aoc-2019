@@ -40,18 +40,16 @@ visited :: Input -> [M.Map (Sum Int, Sum Int) Int]
 visited wires = do
   wire <- wires
   let units = asUnits =<< wire
-      spacesVisited = tail . intermediates $ units
-  pure . M.fromListWith const . flip zip [0..] $ spacesVisited
-
+      spacesVisited = tail . flip zip [0..] . intermediates $ units
+  pure . M.fromListWith const $ spacesVisited
 
 part1 :: Input -> (Sum Int, Sum Int)
 part1 wires = let traces = visited wires
               in minimumBy (comparing (\(x, y) -> abs x + abs y))
                  . M.keys . foldr1 M.intersection $ traces
 
-
-part2 :: Input -> ()
-part2 i = ()
+part2 :: Input -> Int
+part2 = minimum . map snd . M.assocs . foldr1 (M.intersectionWith (+)) . visited
 
 prepare :: String -> Input
 prepare = map parse . lines
