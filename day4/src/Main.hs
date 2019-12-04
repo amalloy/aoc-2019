@@ -2,6 +2,7 @@ module Main where
 
 import Control.Arrow ((&&&))
 import Data.Char (isSpace)
+import Data.List (group)
 
 type Input = (Int, Int)
 
@@ -11,10 +12,11 @@ part1 (lo, hi) = length [n | n <- [lo..hi],
                          any (uncurry (==)) pairs,
                          all (uncurry (<=)) pairs]
 
-
-
-part2 :: Input -> ()
-part2 i = ()
+part2 :: Input -> Int
+part2 (lo, hi) = length [n | n <- [lo..hi],
+                         let pairs = zip <*> tail $ show n,
+                         all (uncurry (<=)) pairs,
+                         any ((== 2) . length) $ group (show n)]
 
 prepare :: String -> Input
 prepare input = case break (== '-') . filter (not . isSpace) $ input of
