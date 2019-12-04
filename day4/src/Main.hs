@@ -1,17 +1,25 @@
 module Main where
 
 import Control.Arrow ((&&&))
+import Data.Char (isSpace)
 
-type Input = [String]
+type Input = (Int, Int)
 
-part1 :: Input -> ()
-part1 i = ()
+part1 :: Input -> Int
+part1 (lo, hi) = length [n | n <- [lo..hi],
+                         let pairs = zip <*> tail $ show n,
+                         any (uncurry (==)) pairs,
+                         all (uncurry (<=)) pairs]
+
+
 
 part2 :: Input -> ()
 part2 i = ()
 
 prepare :: String -> Input
-prepare = lines
+prepare input = case break (== '-') . filter (not . isSpace) $ input of
+  (a, (_:b)) -> (read a, read b)
+  _ -> error "Malformed input"
 
 main :: IO ()
 main = readFile "input.txt" >>= print . (part1 &&& part2) . prepare
