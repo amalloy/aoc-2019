@@ -49,8 +49,8 @@ part1 = minimumBy (comparing (\(x, y) -> abs x + abs y))
   . visited
 
 part2 :: Input -> Int
-part2 = minimum . map snd
-  . M.assocs . foldr1 (M.intersectionWith (+))
+part2 = minimum
+  . M.elems . foldr1 (M.intersectionWith (+))
   . visited
 
 prepare :: String -> Input
