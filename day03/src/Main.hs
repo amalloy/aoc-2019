@@ -44,12 +44,14 @@ visited wires = do
   pure . M.fromListWith const $ spacesVisited
 
 part1 :: Input -> (Sum Int, Sum Int)
-part1 wires = let traces = visited wires
-              in minimumBy (comparing (\(x, y) -> abs x + abs y))
-                 . M.keys . foldr1 M.intersection $ traces
+part1 = minimumBy (comparing (\(x, y) -> abs x + abs y))
+  . M.keys . foldr1 M.intersection
+  . visited
 
 part2 :: Input -> Int
-part2 = minimum . map snd . M.assocs . foldr1 (M.intersectionWith (+)) . visited
+part2 = minimum . map snd
+  . M.assocs . foldr1 (M.intersectionWith (+))
+  . visited
 
 prepare :: String -> Input
 prepare = map parse . lines
