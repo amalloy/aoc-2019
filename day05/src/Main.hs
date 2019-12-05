@@ -8,11 +8,14 @@ import Control.Arrow ((&&&))
 
 type Input = [Int]
 
-part1 :: Input -> Either String [Int]
-part1 mem = (fmap I.outputs) . I.runToCompletion $ I.mkComputer mem [1]
+run :: [Int] -> Input -> Either String [Int]
+run inputs mem = fmap I.outputs . I.runToCompletion $ I.mkComputer mem inputs
 
-part2 :: Input -> ()
-part2 i = ()
+part1 :: Input -> Either String [Int]
+part1 = run [1]
+
+part2 :: Input -> Either String [Int]
+part2 = run [5]
 
 prepare :: String -> Input
 prepare = map read . splitOn "," . head . lines

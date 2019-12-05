@@ -2,6 +2,8 @@ module Intcode where
 
 import Prelude hiding (read)
 
+import Data.Bool (bool)
+
 import qualified Data.Map as M
 import qualified Data.Vector as V
 
@@ -9,7 +11,11 @@ type Address = Int
 type Value = Int
 type Memory = V.Vector Value
 
-data Opcode = Add | Mul | Input | Output | Halt deriving Show
+data Opcode = Add | Mul
+            | Input | Output
+            | JumpIfTrue | JumpIfFalse
+            | LessThan | Equals
+            | Halt deriving Show
 data Operation = Operation { opcode :: Opcode
                            , identifier :: Int
                            , numParams :: Int
@@ -20,6 +26,10 @@ operations = M.fromList [(identifier op, op) | op <-
                             , Operation Mul 2 3
                             , Operation Input 3 1
                             , Operation Output 4 1
+                            , Operation JumpIfTrue 5 2
+                            , Operation JumpIfFalse 6 2
+                            , Operation LessThan 7 3
+                            , Operation Equals 8 3
                             , Operation Halt 99 0
                             ]]
 
@@ -33,37 +43,49 @@ data Computer = Computer { memory :: Memory
                          , running :: Bool
                          } deriving Show
 
-decodeNext :: Computer -> Instruction
-decodeNext Computer {memory = mem, ip = i} =
+decodeNext :: Computer -> Either String Instruction
+decodeNext Computer {memory = mem, ip = i} = do
   let code = mem V.! i
       instrNum = code `mod` 100
-      operation = operations M.! instrNum
-      parameters = V.toList $ V.slice (i + 1) (numParams operation) mem
+  operation <- case operations M.!? instrNum of
+    Nothing -> Left $ "Unknown opcode " ++ show instrNum ++ " at offset " ++ show i
+    Just op -> pure op
+  let parameters = V.toList $ V.slice (i + 1) (numParams operation) mem
       modes = map (intToMode . (`mod` 10)) . iterate (`div` 10) $ code `div` 100
-  in Instr operation $ zip parameters modes
+  pure . Instr operation $ zip parameters modes
   where intToMode 0 = Position
         intToMode 1 = Immediate
         intToMode _ = error "Illegal parameter mode"
 
 advanceIp :: Int -> Computer -> Computer
-advanceIp paramCount c = c { ip = ip c + paramCount + 1 }
+advanceIp paramCount c = c { ip = ip c + paramCount }
 
 execute :: Computer -> Instruction -> Either String Computer
-execute c (Instr op params) = advanceIp (numParams op) <$> case opcode op of
+execute c (Instr op params) = case opcode op of
   Add -> runBin (+)
   Mul -> runBin (*)
-  Input -> case (inputs c, params) of
+  LessThan -> runBin (comparison (<))
+  Equals -> runBin (comparison (==))
+  JumpIfTrue -> jump (/= 0)
+  JumpIfFalse -> jump (== 0)
+  Input -> advanceIp 2 <$> case (inputs c, params) of
     ((i:is), [(param, Position)]) -> pure (updateMemory
                                             (write [(param, i)]) c) {inputs = is}
     actual -> Left $ "Invalid Input: " ++ show actual
-  Output -> case params of
+  Output -> advanceIp 2 <$> case params of
     [param] -> pure $ c {outputs = result : outputs c}
-      where result = read param $ memory c
+      where result = read param mem
   Halt -> pure $ c {running = False}
-  where runBin f = case params of
+  where runBin f = advanceIp 4 <$> case params of
           [a, b, (dst, Position)] -> pure $ updateMemory (write [(dst, result)] ) c
             where result = read a mem `f` read b mem
-                  mem = memory c
+        comparison f x y = bool 0 1 $ x `f` y
+        jump f = case params of
+          [a, b] -> let newIp = if f $ read a mem
+                          then read b mem
+                          else 3 + ip c
+                    in pure $ c {ip = newIp}
+        mem = memory c
 
 read :: (Int, ParameterMode) -> Memory -> Value
 read (x, Immediate) _ = x
@@ -79,7 +101,9 @@ mkComputer :: [Int] -> [Value] -> Computer
 mkComputer mem inputValues = Computer (V.fromList mem) 0 inputValues [] True
 
 tick :: Computer -> Either String Computer
-tick = execute <*> decodeNext
+tick c = do
+  instr <- decodeNext c
+  execute c instr
 
 runToCompletion :: Computer -> Either String Computer
 runToCompletion = head . dropWhile ok . iterate (>>= tick) . pure
