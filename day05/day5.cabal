@@ -25,3 +25,4 @@ executable day5
                      , parsec
                      , regex-applicative
                      , recursion-schemes
+                     , vector

@@ -1,5 +1,7 @@
 module Main where
 
+import qualified Intcode as I
+
 import Control.Arrow ((&&&))
 
 type Input = [String]
