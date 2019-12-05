@@ -48,21 +48,22 @@ decodeNext Computer {memory = mem, ip = i} =
 advanceIp :: Int -> Computer -> Computer
 advanceIp paramCount c = c { ip = ip c + paramCount + 1 }
 
-execute :: Computer -> Instruction -> Computer
-execute c (Instr op params) = advanceIp (numParams op) $ case opcode op of
+execute :: Computer -> Instruction -> Either String Computer
+execute c (Instr op params) = advanceIp (numParams op) <$> case opcode op of
   Add -> runBin (+)
   Mul -> runBin (*)
-  Input -> let (i:is) = inputs c
-               [(param, Immediate)] = params
-           in (updateMemory (write [(param, i)]) c) {inputs = is}
-  Output -> let [param] = params
-                result = read param $ memory c
-            in c {outputs = result : outputs c}
-  Halt -> c {running = False}
-  where runBin f = let [a, b, (dst, Position)] = params
-                       result = read a mem `f` read b mem
-                   in updateMemory (write [(dst, result)] ) c
-          where mem = memory c
+  Input -> case (inputs c, params) of
+    ((i:is), [(param, Position)]) -> pure (updateMemory
+                                            (write [(param, i)]) c) {inputs = is}
+    actual -> Left $ "Invalid Input: " ++ show actual
+  Output -> case params of
+    [param] -> pure $ c {outputs = result : outputs c}
+      where result = read param $ memory c
+  Halt -> pure $ c {running = False}
+  where runBin f = case params of
+          [a, b, (dst, Position)] -> pure $ updateMemory (write [(dst, result)] ) c
+            where result = read a mem `f` read b mem
+                  mem = memory c
 
 read :: (Int, ParameterMode) -> Memory -> Value
 read (x, Immediate) _ = x
@@ -77,8 +78,10 @@ updateMemory f c = c {memory = f $ memory c}
 mkComputer :: [Int] -> [Value] -> Computer
 mkComputer mem inputValues = Computer (V.fromList mem) 0 inputValues [] True
 
-tick :: Computer -> Computer
+tick :: Computer -> Either String Computer
 tick = execute <*> decodeNext
 
-runToCompletion :: Computer -> Computer
-runToCompletion = head . dropWhile running . iterate tick
+runToCompletion :: Computer -> Either String Computer
+runToCompletion = head . dropWhile ok . iterate (>>= tick) . pure
+  where ok (Left _) = False
+        ok (Right c) = running c
