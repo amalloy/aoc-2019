@@ -7,7 +7,7 @@ import qualified Data.Map as M
 data Mass a = Mass a String [Mass a]
 type ParentMap a = M.Map String (String, a)
 
-type Input = M.Map String [String]
+type Input = ParentMap ()
 
 parse :: String -> (String, String)
 parse s = let (a, (_:b)) = break (== ')') s
@@ -24,19 +24,26 @@ invert m = M.fromListWith (++) $ do
   pure (v, [k])
 
 part1 :: Input -> Integer
-part1 m = totalOrbits "COM"
-  where totalOrbits k = case M.lookup k m of
+part1 p = totalOrbits "COM"
+  where m = invert p
+        totalOrbits k = case M.lookup k m of
           Nothing -> 0
           Just children -> sum [totalOrbits c + totalNodes c | c <- children]
         totalNodes k = case M.lookup k m of
           Nothing -> 1
           Just xs -> 1 + sum [totalNodes x | x <- xs]
 
-part2 :: Input -> ()
-part2 i = ()
+part2 :: Input -> Int
+part2 p = minimum . M.elems $ M.intersectionWith (+) (paths "YOU") (paths "SAN")
+  where paths :: String -> M.Map String Int
+        paths k = M.fromList $ costs k
+        costs k = case M.lookup k p of
+          Nothing -> []
+          Just (parent, _) -> (parent, 0) : (fmap succ <$> costs parent)
+
 
 prepare :: String -> Input
-prepare = invert . addAll . map parse . lines
+prepare = addAll . map parse . lines
 
 handle :: String ->  IO ()
 handle s = readFile s >>= print . (part1 &&& part2) . prepare
