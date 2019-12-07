@@ -17,7 +17,7 @@ data Opcode = Add | Mul
             | Input | Output
             | JumpIfTrue | JumpIfFalse
             | LessThan | Equals
-            | Halt deriving Show
+            | Halt deriving (Eq, Show)
 data Operation = Operation { opcode :: Opcode
                            , identifier :: Int
                            , numParams :: Int
@@ -111,7 +111,15 @@ tick c = do
   instr <- decodeNext c
   execute c instr
 
+needsInput :: Computer -> Bool
+needsInput c = null (inputs c) && case decodeNext c of
+  Right (Instr (Operation Input _ _) _) -> True
+  _ -> False
+
+runUntilCondition :: (Computer -> Bool) -> Computer -> Either String Computer
+runUntilCondition pred = head . dropWhile (not . done) . iterate (>>= tick) . pure
+  where done (Left _) = True
+        done (Right c) = pred c
+
 runToCompletion :: Computer -> Either String Computer
-runToCompletion = head . dropWhile ok . iterate (>>= tick) . pure
-  where ok (Left _) = False
-        ok (Right c) = running c
+runToCompletion = runUntilCondition (not . running)
