@@ -5,7 +5,8 @@ import Advent.Intcode
 import Control.Applicative (liftA2)
 import Control.Arrow ((&&&))
 import Control.Monad (foldM)
-import Data.List (permutations, scanl)
+import Data.Bool (bool)
+import Data.List (permutations)
 
 type Input = Program
 
@@ -21,24 +22,22 @@ part1 p = fmap maximum . sequence $ do
 runFeedback :: Program -> [Int] -> Either String Int
 runFeedback p phases = let amps = [mkComputer p [phase] | phase <- phases]
                        in runTillDone 0 amps
-  where runTillDone seed progs = case runOneStep seed progs of
-          Right ([], result) -> pure result
-          Right (ps, carry) -> runTillDone carry ps
-          Left e -> Left e
+  where runTillDone seed progs = do
+          (ps, carry) <- runOneStep seed progs
+          case ps of
+            [] -> pure carry
+            _ -> runTillDone carry ps
 
 runOneStep :: Value -> [Computer] -> Either String ([Computer], Value)
 runOneStep seed [] = pure ([], seed)
-runOneStep seed (p:ps) = case runUntilCondition done (p {inputs = inputs p ++ [seed]}) of
-  Left e -> Left e
-  Right c -> case outputs c of
+runOneStep seed (p:ps) = do
+  c <- runUntilCondition done (p {inputs = inputs p ++ [seed]})
+  case outputs c of
     [] -> Left $ "No outputs in " ++ show c
-    (result:_) -> case runOneStep result ps of
-      Left e -> Left e
-      Right (afters, seed') -> Right (remaining, seed')
-        where remaining | running c = c : afters
-                        | otherwise = afters
+    (result:_) -> do
+      (afters, seed') <- runOneStep result ps
+      pure (bool id (c:) (running c) afters, seed')
   where done = liftA2 (||) needsInput (not . running)
-
 
 part2 :: Input -> Either String Int
 part2 p = fmap maximum . sequence $ do
