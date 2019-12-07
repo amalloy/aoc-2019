@@ -23,5 +23,7 @@ executable day7
   build-depends:       base >= 4.7 && < 5
                      , containers
                      , parsec
-                     , regex-applicative
                      , recursion-schemes
+                     , regex-applicative
+                     , split
+                     , vector
