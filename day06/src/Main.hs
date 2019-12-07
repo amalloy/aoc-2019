@@ -35,12 +35,10 @@ part1 p = totalOrbits "COM"
 
 part2 :: Input -> Int
 part2 p = minimum . M.elems $ M.intersectionWith (+) (paths "YOU") (paths "SAN")
-  where paths :: String -> M.Map String Int
-        paths k = M.fromList $ costs k
+  where paths k = M.fromList $ costs k
         costs k = case M.lookup k p of
           Nothing -> []
           Just (parent, _) -> (parent, 0) : (fmap succ <$> costs parent)
-
 
 prepare :: String -> Input
 prepare = addAll . map parse . lines
