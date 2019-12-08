@@ -26,4 +26,5 @@ executable day7
                      , recursion-schemes
                      , regex-applicative
                      , split
+                     , transformers
                      , vector

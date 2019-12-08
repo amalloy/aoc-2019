@@ -4,7 +4,10 @@ import Advent.Intcode
 
 import Control.Applicative (liftA2)
 import Control.Arrow ((&&&))
-import Control.Monad (foldM)
+import Control.Monad (foldM, when)
+import Control.Monad.Trans.Writer
+import Control.Monad.Trans.Except
+import Control.Monad.Trans.Class (lift)
 import Data.Bool (bool)
 import Data.List (permutations)
 
@@ -21,23 +24,23 @@ part1 p = fmap maximum . sequence $ do
 
 runFeedback :: Program -> [Int] -> Either String Int
 runFeedback p phases = let amps = [mkComputer p [phase] | phase <- phases]
-                       in runTillDone 0 amps
+                       in runExcept $ runTillDone 0 amps
   where runTillDone seed progs = do
-          (ps, carry) <- runOneStep seed progs
+          (carry, ps) <- runWriterT $ runOneStep seed progs
           case ps of
             [] -> pure carry
             _ -> runTillDone carry ps
 
-runOneStep :: Value -> [Computer] -> Either String ([Computer], Value)
-runOneStep seed [] = pure ([], seed)
-runOneStep seed (p:ps) = do
-  c <- runUntilCondition done (p {inputs = inputs p ++ [seed]})
-  case outputs c of
-    [] -> Left $ "No outputs in " ++ show c
-    (result:_) -> do
-      (afters, seed') <- runOneStep result ps
-      pure (bool id (c:) (running c) afters, seed')
-  where done = liftA2 (||) needsInput (not . running)
+runOneStep :: Value -> [Computer] -> WriterT [Computer] (Except String) Value
+runOneStep = foldM runOneComputer
+  where runOneComputer seed c = do
+          c <- lift . except $ runUntilCondition done (c {inputs = inputs c ++ [seed]})
+          case outputs c of
+            [] -> lift . throwE $ "No outputs in " ++ show c
+            (result:_) -> do
+              when (running c) $ tell [c]
+              pure result
+        done = liftA2 (||) needsInput (not . running)
 
 part2 :: Input -> Either String Int
 part2 p = fmap maximum . sequence $ do
