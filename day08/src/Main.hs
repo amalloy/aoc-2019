@@ -1,6 +1,5 @@
 module Main where
 
-import Control.Arrow ((&&&))
 import Data.List (minimumBy, transpose)
 import Data.List.Split (chunksOf)
 import Data.Ord (comparing)
