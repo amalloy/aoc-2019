@@ -1,17 +1,19 @@
 module Main where
 
+import Advent.Intcode
+
 import Control.Arrow ((&&&))
 
-type Input = [String]
+type Input = Computer
 
-part1 :: Input -> ()
-part1 i = ()
+part1 :: Input -> Either String [Value]
+part1 = fmap outputs . runToCompletion
 
 part2 :: Input -> ()
 part2 i = ()
 
 prepare :: String -> Input
-prepare = lines
+prepare = (`mkComputer` [1]) . parseIntcodeProgram
 
 main :: IO ()
 main = readFile "input.txt" >>= print . (part1 &&& part2) . prepare
