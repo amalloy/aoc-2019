@@ -2,9 +2,12 @@ module Main where
 
 import Control.Arrow ((&&&))
 import Control.Monad (guard)
+import Data.List (maximumBy, sortOn)
+import Data.Ord (comparing)
 import Data.Ratio
 
 import qualified Data.Map as M
+import qualified Data.Set as S
 
 type Delta a = a
 type Coord = (Rational, Rational)
@@ -35,8 +38,22 @@ allVisibilities m = M.mapWithKey visible m
 part1 :: Input -> Int
 part1 = maximum . map length . M.elems
 
-part2 :: Input -> ()
-part2 i = ()
+angleFromYAxis :: Coord -> Double
+angleFromYAxis (y, x) = rescale (atan2 (fromRational y) (fromRational x) + (pi / 2))
+  where rescale theta | theta < 0 = theta + (2 * pi)
+                      | otherwise = theta
+
+part2 :: Input -> Rational
+part2 m = let origin@(oy, ox) = fst . maximumBy (comparing (length . snd)) . M.assocs $ m
+              m' = M.mapKeys (\(y, x) -> (y - oy, x - ox)) . M.delete origin $ m
+              (y, x) = remove 200 m'
+          in ((x + ox) * 100 + (y + oy))
+  where remove n m | numCandidates < n = remove (n - numCandidates)
+                                         (M.withoutKeys m (S.fromList candidates))
+                   | otherwise = sortOn angleFromYAxis candidates !! (n - 1)
+          where candidates = filter (canSee m (0, 0)) (M.keys m)
+                numCandidates = length candidates
+
 
 prepare :: String -> Input
 prepare input = allVisibilities . M.fromList $ do
