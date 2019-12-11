@@ -5,6 +5,7 @@ import Advent.Intcode
 import Control.Arrow ((&&&))
 
 import qualified Data.Map as M
+import qualified Data.Set as S
 
 import Control.Monad (when)
 import Control.Monad.Trans.Except
@@ -60,10 +61,10 @@ intToColor 1 = White
 
 type Stack a = StateT Progress (Except String) a
 
-part1 :: Input -> Int
-part1 p = either error (M.size . _hull) . runExcept . execStateT go $ initialState
+paint :: Color -> Input -> Hull
+paint c p = either error _hull . runExcept . execStateT go $ initialState
   where initialState :: Progress
-        initialState = Progress (Robot North (0, 0)) M.empty (mkComputer p [0]) 0 []
+        initialState = Progress (Robot North (0, 0)) M.empty (mkComputer p [colorToInt c]) 0 []
         go :: Stack ()
         go = do
           c <- gets _computer
@@ -90,13 +91,29 @@ part1 p = either error (M.size . _hull) . runExcept . execStateT go $ initialSta
               -- traceShow s $ pure ()
               pure ()
 
+part1 :: Input -> Int
+part1 = M.size . paint Black
 
-
-part2 :: Input -> ()
-part2 i = ()
+part2 :: Input -> String
+part2 p = let hull = paint White p
+              whites = S.fromList [pos | (pos, White) <- M.assocs hull]
+              minx = minimum . map fst $ S.elems whites
+              miny = minimum . map snd $ S.elems whites
+              maxx = maximum . map fst $ S.elems whites
+              maxy = maximum . map snd $ S.elems whites
+          in unlines $ do
+  y <- [miny..maxy]
+  pure $ do
+    x <- [minx..maxx]
+    pure $ if S.member (x, y) whites
+      then '.'
+      else ' '
 
 prepare :: String -> Input
 prepare = parseIntcodeProgram
 
 main :: IO ()
-main = readFile "input.txt" >>= print . (part1 &&& part2) . prepare
+main = do
+  input <- prepare <$> readFile "input.txt"
+  print $ part1 input
+  putStrLn $ part2 input
