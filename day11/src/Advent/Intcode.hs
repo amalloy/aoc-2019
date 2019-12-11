@@ -144,5 +144,9 @@ runUntilCondition pred = head . dropWhile (not . done) . iterate (>>= tick) . pu
 runToCompletion :: Computer -> Intcode Computer
 runToCompletion = runUntilCondition (not . running)
 
+runUntilInputNeededOrDone :: Computer -> Intcode Computer
+runUntilInputNeededOrDone = runUntilCondition done
+  where done = (||) <$> needsInput <*> not . running
+
 input :: Value -> Computer -> Computer
 input x c = c {inputs = x : inputs c}
